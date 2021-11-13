@@ -24,8 +24,10 @@ echo "Create dist/"
 sudo rm -rf dist
 mkdir dist
 
-echo "Create executables with pyinstaller"
+echo "Install pyinstaller and build bootloaders for M1"
 pip install pyinstaller==4.5
+
+echo "Create executables with pyinstaller"
 SPEC_FILE=$(python -c 'import spare; print(spare.PYINSTALLER_SPEC_PATH)')
 pyinstaller --log-level=INFO "$SPEC_FILE"
 LAST_EXIT_CODE=$?
@@ -66,7 +68,7 @@ if [ "$LAST_EXIT_CODE" -ne 0 ]; then
 fi
 
 if [ "$NOTARIZE" ]; then
-  electron-osx-sign Spare-darwin-x64/Spare.app --platform=darwin \
+  electron-osx-sign Spare-darwin-arm64/Spare.app --platform=darwin \
   --hardened-runtime=true --provisioning-profile=spareblockchain.provisionprofile \
   --entitlements=entitlements.mac.plist --entitlements-inherit=entitlements.mac.plist \
   --no-gatekeeper-assess
@@ -77,19 +79,21 @@ if [ "$LAST_EXIT_CODE" -ne 0 ]; then
 	exit $LAST_EXIT_CODE
 fi
 
-mv Spare-darwin-x64 ../build_scripts/dist/
+mv Spare-darwin-arm64 ../build_scripts/dist/
 cd ../build_scripts || exit
 
-DMG_NAME="Spare-$SPARE_INSTALLER_VERSION.dmg"
+DMG_NAME="Spare-$SPARE_INSTALLER_VERSION-arm64.dmg"
 echo "Create $DMG_NAME"
 mkdir final_installer
-electron-installer-dmg dist/Spare-darwin-x64/Spare.app Spare-$SPARE_INSTALLER_VERSION \
+electron-installer-dmg dist/Spare-darwin-arm64/Spare.app Spare-$SPARE_INSTALLER_VERSION-arm64 \
 --overwrite --out final_installer
 LAST_EXIT_CODE=$?
 if [ "$LAST_EXIT_CODE" -ne 0 ]; then
 	echo >&2 "electron-installer-dmg failed!"
 	exit $LAST_EXIT_CODE
 fi
+
+ls -lh final_installer
 
 if [ "$NOTARIZE" ]; then
 	echo "Notarize $DMG_NAME on ci"
